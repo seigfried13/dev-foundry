@@ -9,9 +9,9 @@ server:
 
 # Paths Configuration
 paths:
-  database: "./hephaestus.db"
+  database: "./foundry.db"
   phases_folder: "./example_workflows/crackme_solving"
-  worktree_base: "/tmp/hephaestus_worktrees"
+  worktree_base: "/tmp/foundry_worktrees"
   project_root: "./your_project"  # Default working directory for agents
 
 # Git Configuration
@@ -24,8 +24,8 @@ git:
 # LLM Configuration
 llm:
   # Embedding configuration
-  embedding_model: "text-embedding-3-large"
-  embedding_provider: "openai"  # Can be: openai, azure_openai, google_ai
+  embedding_model: "mxbai-embed-large"
+  embedding_provider: "ollama"  # Can be: openai, azure_openai, google_ai, ollama
 
   # Used by: SDK workflows, legacy single-provider mode, and when multi-provider config is unavailable
   # This replaces the deprecated LLM_MODEL env variable
@@ -47,6 +47,9 @@ llm:
 
     groq:
       api_key_env: "GROQ_API_KEY"
+
+    ollama:
+      base_url: "http://localhost:11434"
 
     # Azure OpenAI - For business users with Azure subscriptions
     # Uncomment and configure if you want to use Azure OpenAI:
@@ -120,7 +123,7 @@ agents:
 # Vector Store Configuration
 vector_store:
   qdrant_url: "http://localhost:6333"
-  collection_prefix: "hephaestus"
+  collection_prefix: "foundry"
   embedding_dimension: 1536
 
 # Monitoring Configuration

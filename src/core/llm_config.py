@@ -44,7 +44,7 @@ class MultiProviderLLMConfig(BaseModel):
     )
     embedding_provider: str = Field(
         default="openai",
-        description="Provider for embeddings (openai, azure_openai, google_ai)"
+        description="Provider for embeddings (openai, azure_openai, google_ai, ollama)"
     )
     providers: Dict[str, ProviderConfig] = Field(
         default_factory=dict,

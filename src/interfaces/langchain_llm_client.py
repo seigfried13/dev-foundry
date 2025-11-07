@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings, AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_community.embeddings import OllamaEmbeddings
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.documents import Document
@@ -123,6 +124,16 @@ class LangChainLLMClient:
                     logger.info(f"  ✓ Embedding model initialized: Google AI {self.config.embedding_model}")
                 else:
                     logger.warning(f"Google AI embedding configuration incomplete (key missing)")
+
+        elif embedding_provider == "ollama":
+            ollama_provider = self.config.providers.get("ollama")
+            if ollama_provider:
+                self._embedding_model = OllamaEmbeddings(
+                    model=self.config.embedding_model,
+                    base_url=ollama_provider.base_url
+                )
+                logger.info(f"  ✓ Embedding model initialized: Ollama {self.config.embedding_model}")
+
 
         if not self._embedding_model:
             logger.warning(f"Embedding model not initialized for provider: {embedding_provider}")
