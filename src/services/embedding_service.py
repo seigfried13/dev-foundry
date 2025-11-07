@@ -1,11 +1,12 @@
 """Service for generating and comparing embeddings for task deduplication."""
 
 import numpy as np
-import openai
-from typing import List, Dict, Any, Optional
+from typing import List
 import logging
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from src.core.simple_config import get_config
+from src.services.embedding_providers.base import EmbeddingProvider
+from src.services.embedding_providers.openai import OpenAIEmbeddingProvider
+from src.services.embedding_providers.ollama import OllamaEmbeddingProvider
 
 logger = logging.getLogger(__name__)
 
@@ -13,29 +14,30 @@ logger = logging.getLogger(__name__)
 class EmbeddingService:
     """Service for generating and comparing embeddings."""
 
-    def __init__(self, openai_api_key: str):
-        """Initialize the embedding service.
-
-        Args:
-            openai_api_key: OpenAI API key for generating embeddings
-        """
-        self.client = openai.OpenAI(api_key=openai_api_key)
+    def __init__(self):
+        """Initialize the embedding service."""
         self.config = get_config()
-        self.model = self.config.task_embedding_model
-        logger.info(f"Initialized EmbeddingService with model: {self.model}")
+        self.provider = self._get_provider()
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(min=1, max=10),
-        retry=retry_if_exception_type(
-            (openai.APIError, openai.APIConnectionError, openai.RateLimitError)
-        ),
-        reraise=True,
-    )
+    def _get_provider(self) -> EmbeddingProvider:
+        """Get the embedding provider based on the configuration."""
+        provider_name = self.config.task_embedding_provider
+        if provider_name == "openai":
+            logger.info("Using OpenAI for embedding generation.")
+            return OpenAIEmbeddingProvider(
+                api_key=self.config.openai_api_key, model=self.config.task_embedding_model
+            )
+        elif provider_name == "ollama":
+            logger.info("Using Ollama for embedding generation.")
+            return OllamaEmbeddingProvider(
+                model=self.config.task_embedding_model,
+                ollama_url=self.config.ollama_api_url,
+            )
+        else:
+            raise ValueError(f"Unknown embedding provider: {provider_name}")
+
     async def generate_embedding(self, text: str) -> List[float]:
-        """Generate embedding using OpenAI's text-embedding model.
-
-        Retries up to 3 times with exponential backoff for API errors.
+        """Generate embedding using the configured provider.
 
         Args:
             text: Text to generate embedding for
@@ -46,27 +48,7 @@ class EmbeddingService:
         Raises:
             Exception: If embedding generation fails after retries
         """
-        try:
-            # Truncate text if too long (max ~8000 tokens for most models)
-            max_chars = 30000  # Conservative limit
-            if len(text) > max_chars:
-                logger.warning(f"Text truncated from {len(text)} to {max_chars} characters")
-                text = text[:max_chars]
-
-            response = self.client.embeddings.create(
-                model=self.model, input=text, encoding_format="float"
-            )
-
-            embedding = response.data[0].embedding
-            logger.info(f"Generated embedding with dimension: {len(embedding)}")
-            return embedding
-
-        except (openai.APIError, openai.APIConnectionError, openai.RateLimitError) as e:
-            logger.warning(f"OpenAI API error (will retry): {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Failed to generate embedding: {e}")
-            raise
+        return await self.provider.generate_embedding(text)
 
     def calculate_cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """Calculate cosine similarity between two vectors.

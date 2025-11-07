@@ -102,7 +102,9 @@ class Config:
         self.task_dedup_enabled = dedup.get('enabled', True)
         self.task_similarity_threshold = dedup.get('similarity_threshold', 0.7)
         self.task_related_threshold = dedup.get('related_threshold', 0.4)
+        self.task_embedding_provider = dedup.get('provider', 'openai')
         self.task_embedding_model = dedup.get('embedding_model', 'text-embedding-3-large')
+        self.ollama_api_url = dedup.get('ollama_api_url', 'http://localhost:11434')
         self.task_embedding_dimension = dedup.get('embedding_dimension', 3072)
         self.task_dedup_batch_size = dedup.get('batch_size', 100)
 
